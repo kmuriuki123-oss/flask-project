@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse Chat Sandbox</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="wrapper">
+        <header>
+            <h1>💬 Live Chat Application Dashboard</h1>
+            <p>Running securely on custom port <code>8080</code> to bypass local connectivity errors.</p>
+        </header>
+
+        <main class="card chat-box">
+            <h2>Global Live Stream Room</h2>
+            <div class="message-stream" id="chatStream">
+                {% for msg in history %}
+                    <div class="message-node {% if msg.user == 'Bravin' %}me{% else %}them{% endif %}">
+                        <span class="sender">@{{ msg.user }}</span>
+                        <p class="bubble">{{ msg.text }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </main>
+
+        <div class="split-controls">
+            <section class="card simulator-panel">
+                <h3>Simulate as Bravin</h3>
+                <div class="input-row">
+                    <input type="text" id="msgBravin" placeholder="Type message as Bravin...">
+                    <button class="btn" onclick="sendMessage('Bravin', 'msgBravin')">Send</button>
+                </div>
+            </section>
+
+            <section class="card simulator-panel">
+                <h3>Simulate as Meridian</h3>
+                <div class="input-row">
+                    <input type="text" id="msgMeridian" placeholder="Type message as Meridian...">
+                    <button class="btn btn-secondary" onclick="sendMessage('Meridian', 'msgMeridian')">Send</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage(user, inputId) {
+            const inputElement = document.getElementById(inputId);
+            const text = inputElement.value.trim();
+            
+            if(!text) return;
+
+            try {
+                const response = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, text: text })
+                });
+                
+                if(response.ok) {
+                    inputElement.value = '';
+                    const data = await response.json();
+                    renderMessages(data.all_messages);
+                }
+            } catch (err) {
+                alert("Server down or unreachable. Verify application terminal status.");
+            }
+        }
+
+        function renderMessages(messages) {
+            const stream = document.getElementById('chatStream');
+            stream.innerHTML = messages.map(msg => `
+                <div class="message-node ${msg.user === 'Bravin' ? 'me' : 'them'}">
+                    <span class="sender">@${msg.user}</span>
+                    <p class="bubble">${msg.text}</p>
+                </div>
+            `).join('');
+            stream.scrollTop = stream.scrollHeight;
+        }
+        
+        const stream = document.getElementById('chatStream');
+        stream.scrollTop = stream.scrollHeight;
+    </script>
+</body>
+</html>
